@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Gamepad2, Play, RotateCcw, Trophy, Zap, Bug } from 'lucide-react';
+import { X, Gamepad2, Play, RotateCcw, Trophy, Zap } from 'lucide-react';
 import { audioEngine } from '../utils/audioEngine';
 import { HumanRunnerSprite } from './HumanRunnerSprite';
+import { CyberEnvironment } from './CyberEnvironment';
+import { ObstacleGraphic, type ObstacleType } from './ObstacleGraphic';
 import { CodeInvadersGame } from './CodeInvadersGame';
 import { CyberSnakeGame } from './CyberSnakeGame';
 import { MemoryMatrixGame } from './MemoryMatrixGame';
@@ -14,9 +16,10 @@ interface ArcadeModalProps {
 interface Obstacle {
   id: number;
   x: number;
-  type: 'bug' | 'err404' | 'nullPointer' | 'syntax';
+  type: ObstacleType;
   label: string;
   width: number;
+  height: number;
 }
 
 export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => {
@@ -49,7 +52,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       setIsJumping(true);
       audioEngine.playClickSound(900);
 
-      let velocity = 12;
+      let velocity = 13;
       const jumpInterval = setInterval(() => {
         playerYRef.current += velocity;
         velocity -= 0.8;
@@ -98,11 +101,13 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
   useEffect(() => {
     if (runnerState !== 'PLAYING' || activeTab !== 'RUNNER') return;
 
-    const obstacleTypes: { type: 'bug' | 'err404' | 'nullPointer' | 'syntax'; label: string; width: number }[] = [
-      { type: 'bug', label: '<Bug />', width: 45 },
-      { type: 'err404', label: '404 ERR', width: 55 },
-      { type: 'nullPointer', label: 'NullPointer', width: 70 },
-      { type: 'syntax', label: 'SyntaxErr', width: 65 },
+    const obstacleConfigs: { type: ObstacleType; label: string; width: number; height: number }[] = [
+      { type: 'alienBug', label: '<Bug />', width: 48, height: 40 },
+      { type: 'wall404', label: '404 ERR', width: 64, height: 55 },
+      { type: 'nullCrystal', label: 'NullPtr', width: 36, height: 65 },
+      { type: 'serverFire', label: '500 ERR', width: 56, height: 44 },
+      { type: 'syntaxSpike', label: 'Syntax', width: 56, height: 35 },
+      { type: 'memoryBlob', label: 'MemLeak', width: 72, height: 32 },
     ];
 
     let animationFrameId: number;
@@ -113,19 +118,21 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       scoreRef.current += 1;
       setRunnerScore(Math.floor(scoreRef.current / 5));
 
-      if (now - lastObstacleTime.current > 1400 - Math.min(scoreRef.current * 0.5, 600)) {
-        const randomObstacle = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+      // Spawn obstacle
+      if (now - lastObstacleTime.current > 1300 - Math.min(scoreRef.current * 0.4, 550)) {
+        const randomObstacle = obstacleConfigs[Math.floor(Math.random() * obstacleConfigs.length)];
         setObstacles((prev) => [
           ...prev,
           {
             id: now,
-            x: 600,
+            x: 640,
             ...randomObstacle,
           },
         ]);
         lastObstacleTime.current = now;
       }
 
+      // Move & Collision detection
       setObstacles((prev) => {
         const speed = 6 + Math.min(scoreRef.current * 0.005, 8);
         const updated = prev
@@ -133,13 +140,14 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           .filter((obs) => obs.x > -100);
 
         const playerX = 50;
-        const playerHeight = 45;
+        const playerWidth = 32;
 
         for (const obs of updated) {
+          // Precise AABB Collision Box Check
           if (
-            obs.x < playerX + 35 &&
+            obs.x < playerX + playerWidth &&
             obs.x + obs.width > playerX &&
-            playerYRef.current < playerHeight
+            playerYRef.current < obs.height - 10
           ) {
             endRunner();
             return updated;
@@ -247,7 +255,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           </button>
         </div>
 
-        {/* Tab 1: CYBER RUNNER WITH ANIMATED HUMAN SPRITE */}
+        {/* Tab 1: CYBER RUNNER WITH ENVIRONMENT & DIVERSE SHAPE OBSTACLES */}
         {activeTab === 'RUNNER' && (
           <div className="w-full flex flex-col items-center">
             <div className="w-full flex items-center justify-between mb-2 font-mono text-xs text-slate-300">
@@ -266,13 +274,18 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
               onClick={triggerJump}
               className="w-full h-64 bg-slate-950/90 rounded-2xl relative overflow-hidden border border-slate-800 cursor-pointer select-none flex flex-col justify-between"
             >
+              {/* PARALLAX ENVIRONMENT: Cyber Mountains, Moving Clouds, Trees & Towers */}
+              <CyberEnvironment />
+
+              {/* Background Cyber Grid */}
               <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
 
-              <div className="relative z-10 p-3 flex justify-between text-xs font-mono text-slate-500">
+              <div className="relative z-10 p-3 flex justify-between text-xs font-mono text-slate-400">
                 <span>[SPACE] or TAP to Jump</span>
-                <span>Avoid Bugs & 404s!</span>
+                <span>Avoid Alien Bugs, 404 Walls & Crystals!</span>
               </div>
 
+              {/* Start Screen Overlay */}
               {runnerState === 'START' && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/90 p-4 text-center">
                   <div className="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-3 animate-bounce">
@@ -280,7 +293,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                   </div>
                   <h3 className="text-xl font-bold text-white font-mono mb-1">CYBER RUNNER</h3>
                   <p className="text-slate-400 text-xs font-mono mb-4">
-                    Guide Saran Neralla (Animated Human Runner) past 404 bugs!
+                    Guide Saran Neralla through cyber mountains & jump over alien bugs & 404 walls!
                   </p>
                   <button
                     onClick={startRunner}
@@ -291,6 +304,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 </div>
               )}
 
+              {/* Game Over Screen Overlay */}
               {runnerState === 'GAMEOVER' && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
                   <h3 className="text-2xl font-extrabold text-rose-400 font-mono mb-1">SYSTEM CRASH!</h3>
@@ -308,7 +322,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
 
               {/* ANIMATED HUMAN DEVELOPER SPRITE */}
               <div
-                className="absolute left-[50px] bottom-[20px] transition-transform duration-75 flex items-center justify-center"
+                className="absolute left-[50px] bottom-[20px] z-10 transition-transform duration-75 flex items-center justify-center"
                 style={{
                   transform: `translateY(${-playerY}px)`,
                 }}
@@ -316,23 +330,21 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 <HumanRunnerSprite isJumping={isJumping} score={runnerScore} />
               </div>
 
-              {/* Obstacles */}
+              {/* DIVERSE SHAPE & SIZE OBSTACLES */}
               {obstacles.map((obs) => (
                 <div
                   key={obs.id}
-                  className="absolute bottom-[24px] px-2 py-1 rounded-lg bg-rose-950/90 border border-rose-800 text-rose-300 font-mono text-xs font-bold flex items-center gap-1 shadow-md"
+                  className="absolute bottom-[24px] z-10"
                   style={{
                     left: `${obs.x}px`,
-                    width: `${obs.width}px`,
                   }}
                 >
-                  <Bug className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span className="truncate">{obs.label}</span>
+                  <ObstacleGraphic type={obs.type} label={obs.label} />
                 </div>
               ))}
 
-              {/* Track */}
-              <div className="w-full h-6 bg-slate-900 border-t border-cyan-500/40 relative flex items-center justify-between px-2 font-mono text-[10px] text-cyan-500/60">
+              {/* Neon Running Track */}
+              <div className="w-full h-6 bg-slate-900 border-t-2 border-cyan-400/80 relative z-10 flex items-center justify-between px-2 font-mono text-[10px] text-cyan-400/80 shadow-[0_-4px_12px_rgba(56,189,248,0.3)]">
                 <span>-----------------------------</span>
                 <span>CYBER_RUNNER_TRACK</span>
                 <span>-----------------------------</span>
