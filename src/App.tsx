@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThreeCanvas } from './components/ThreeCanvas';
-import { Cpu, Sparkles, Code2, Terminal, Brackets, Database, GitBranch, Binary, Layers } from 'lucide-react';
+import { CyberRunnerGame } from './components/CyberRunnerGame';
+import { Cpu, Sparkles, Code2, Terminal, Brackets, Database, GitBranch, Binary, Layers, Gamepad2 } from 'lucide-react';
+import { audioEngine } from './utils/audioEngine';
 
 export function App() {
+  const [isGameOpen, setIsGameOpen] = useState(false);
+
   const codeBadges = [
     { text: '</>', icon: Code2, x: '12%', y: '22%', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-950/60' },
     { text: '{ ... }', icon: Brackets, x: '82%', y: '18%', color: 'text-purple-400 border-purple-500/30 bg-purple-950/60' },
@@ -99,11 +104,26 @@ export function App() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-lg sm:text-2xl text-slate-300 max-w-xl font-light tracking-wide font-sans flex items-center justify-center gap-2"
+          className="text-lg sm:text-2xl text-slate-300 max-w-xl font-light tracking-wide font-sans flex items-center justify-center gap-2 mb-8"
         >
           <Sparkles className="w-5 h-5 text-cyan-400 animate-spin" />
           <span>Building something awesome for <strong className="text-cyan-300 font-semibold font-mono">neralla.in</strong></span>
         </motion.p>
+
+        {/* Interactive Game CTA Button */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          onClick={() => {
+            audioEngine.playClickSound(800);
+            setIsGameOpen(true);
+          }}
+          className="px-6 py-3 rounded-2xl glass-panel hover:bg-slate-900/90 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 font-mono text-sm font-bold transition-all duration-300 shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/40 flex items-center gap-2.5 transform hover:-translate-y-0.5"
+        >
+          <Gamepad2 className="w-5 h-5 text-cyan-400 animate-bounce" />
+          <span>Play Cyber Runner 🎮</span>
+        </motion.button>
       </main>
 
       {/* Minimal Footer */}
@@ -117,6 +137,12 @@ export function App() {
           Saran Neralla
         </motion.p>
       </footer>
+
+      {/* Cyber Runner Mini Game Modal */}
+      <CyberRunnerGame
+        isOpen={isGameOpen}
+        onClose={() => setIsGameOpen(false)}
+      />
     </div>
   );
 }
