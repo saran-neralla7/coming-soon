@@ -99,18 +99,18 @@ export function App() {
           COMING <span className="text-gradient">SOON</span>
         </motion.h1>
 
-        {/* Sub-headline */}
+        {/* User-Requested Engaging Sentence */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-lg sm:text-2xl text-slate-300 max-w-xl font-light tracking-wide font-sans flex items-center justify-center gap-2 mb-8"
+          className="text-lg sm:text-2xl text-slate-200 max-w-2xl font-light tracking-wide font-sans flex items-center justify-center gap-2 mb-8 leading-relaxed"
         >
-          <Sparkles className="w-5 h-5 text-cyan-400 animate-spin" />
-          <span>Building something awesome for <strong className="text-cyan-300 font-semibold font-mono">neralla.in</strong></span>
+          <Sparkles className="w-5 h-5 text-cyan-400 animate-spin shrink-0" />
+          <span>We are coming soon! But till then, enjoy playing these games.</span>
         </motion.p>
 
-        {/* Interactive Game CTA Button */}
+        {/* Interactive Fullscreen Arcade CTA Button */}
         <motion.button
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -119,10 +119,10 @@ export function App() {
             audioEngine.playClickSound(800);
             setIsArcadeOpen(true);
           }}
-          className="px-6 py-3 rounded-2xl glass-panel hover:bg-slate-900/90 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 font-mono text-sm font-bold transition-all duration-300 shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/40 flex items-center gap-2.5 transform hover:-translate-y-0.5"
+          className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-mono text-sm sm:text-base font-bold transition-all duration-300 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center gap-3 transform hover:-translate-y-1"
         >
-          <Gamepad2 className="w-5 h-5 text-cyan-400 animate-bounce" />
-          <span>Play Cyber Arcade 🎮</span>
+          <Gamepad2 className="w-6 h-6 text-cyan-200 animate-bounce" />
+          <span>🎮 Enter Cyber Arcade (Play Fullscreen)</span>
         </motion.button>
       </main>
 

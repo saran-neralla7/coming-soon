@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Gamepad2, Play, RotateCcw, Trophy, Zap } from 'lucide-react';
+import { X, Gamepad2, Play, RotateCcw, Trophy, Zap, Maximize2, Minimize2 } from 'lucide-react';
 import { audioEngine } from '../utils/audioEngine';
 import { HumanRunnerSprite } from './HumanRunnerSprite';
 import { CyberEnvironment } from './CyberEnvironment';
 import { ObstacleGraphic, type ObstacleType } from './ObstacleGraphic';
+import { CyberTrafficRacerGame } from './CyberTrafficRacerGame';
 import { CodeInvadersGame } from './CodeInvadersGame';
 import { CyberSnakeGame } from './CyberSnakeGame';
 import { MemoryMatrixGame } from './MemoryMatrixGame';
@@ -23,7 +24,8 @@ interface Obstacle {
 }
 
 export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'RUNNER' | 'INVADERS' | 'SNAKE' | 'MEMORY'>('RUNNER');
+  const [activeTab, setActiveTab] = useState<'RACER' | 'RUNNER' | 'INVADERS' | 'SNAKE' | 'MEMORY'>('RACER');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // CYBER RUNNER STATE
   const [runnerState, setRunnerState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
@@ -118,7 +120,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       scoreRef.current += 1;
       setRunnerScore(Math.floor(scoreRef.current / 5));
 
-      // Spawn obstacle
       if (now - lastObstacleTime.current > 1300 - Math.min(scoreRef.current * 0.4, 550)) {
         const randomObstacle = obstacleConfigs[Math.floor(Math.random() * obstacleConfigs.length)];
         setObstacles((prev) => [
@@ -132,7 +133,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         lastObstacleTime.current = now;
       }
 
-      // Move & Collision detection
       setObstacles((prev) => {
         const speed = 6 + Math.min(scoreRef.current * 0.005, 8);
         const updated = prev
@@ -143,7 +143,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         const playerWidth = 32;
 
         for (const obs of updated) {
-          // Precise AABB Collision Box Check
           if (
             obs.x < playerX + playerWidth &&
             obs.x + obs.width > playerX &&
@@ -179,8 +178,12 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-      <div className="w-full max-w-3xl glass-panel-glow p-6 sm:p-8 rounded-3xl relative border border-cyan-500/40 shadow-2xl overflow-hidden flex flex-col items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md">
+      <div
+        className={`w-full ${
+          isFullscreen ? 'h-full max-w-full rounded-none' : 'max-w-4xl h-auto max-h-[92vh] rounded-3xl'
+        } glass-panel-glow p-4 sm:p-6 relative border border-cyan-500/40 shadow-2xl overflow-y-auto flex flex-col items-center transition-all duration-300`}
+      >
         {/* Header Bar */}
         <div className="w-full flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2 font-mono text-sm text-cyan-400 font-bold">
@@ -188,22 +191,46 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
             <span>NERALLA.IN CYBER ARCADE</span>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Game Tabs Selector */}
-        <div className="w-full grid grid-cols-4 gap-2 mb-4">
+        <div className="w-full grid grid-cols-5 gap-1.5 sm:gap-2 mb-4">
+          <button
+            onClick={() => {
+              setActiveTab('RACER');
+              audioEngine.playClickSound(700);
+            }}
+            className={`py-2 px-2 sm:px-3 rounded-xl font-mono text-xs font-bold transition-all ${
+              activeTab === 'RACER'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/40'
+                : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            🏎️ Racer
+          </button>
+
           <button
             onClick={() => {
               setActiveTab('RUNNER');
               audioEngine.playClickSound(700);
             }}
-            className={`py-2 px-3 rounded-xl font-mono text-xs font-bold transition-all ${
+            className={`py-2 px-2 sm:px-3 rounded-xl font-mono text-xs font-bold transition-all ${
               activeTab === 'RUNNER'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/40'
                 : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -217,7 +244,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
               setActiveTab('INVADERS');
               audioEngine.playClickSound(700);
             }}
-            className={`py-2 px-3 rounded-xl font-mono text-xs font-bold transition-all ${
+            className={`py-2 px-2 sm:px-3 rounded-xl font-mono text-xs font-bold transition-all ${
               activeTab === 'INVADERS'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/40'
                 : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -231,7 +258,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
               setActiveTab('SNAKE');
               audioEngine.playClickSound(700);
             }}
-            className={`py-2 px-3 rounded-xl font-mono text-xs font-bold transition-all ${
+            className={`py-2 px-2 sm:px-3 rounded-xl font-mono text-xs font-bold transition-all ${
               activeTab === 'SNAKE'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/40'
                 : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -245,7 +272,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
               setActiveTab('MEMORY');
               audioEngine.playClickSound(700);
             }}
-            className={`py-2 px-3 rounded-xl font-mono text-xs font-bold transition-all ${
+            className={`py-2 px-2 sm:px-3 rounded-xl font-mono text-xs font-bold transition-all ${
               activeTab === 'MEMORY'
                 ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/40'
                 : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -255,7 +282,10 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           </button>
         </div>
 
-        {/* Tab 1: CYBER RUNNER WITH ENVIRONMENT & DIVERSE SHAPE OBSTACLES */}
+        {/* Tab 1: CYBER TRAFFIC RACER */}
+        {activeTab === 'RACER' && <CyberTrafficRacerGame />}
+
+        {/* Tab 2: CYBER RUNNER */}
         {activeTab === 'RUNNER' && (
           <div className="w-full flex flex-col items-center">
             <div className="w-full flex items-center justify-between mb-2 font-mono text-xs text-slate-300">
@@ -272,12 +302,9 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
 
             <div
               onClick={triggerJump}
-              className="w-full h-64 bg-slate-950/90 rounded-2xl relative overflow-hidden border border-slate-800 cursor-pointer select-none flex flex-col justify-between"
+              className="w-full h-72 sm:h-80 bg-slate-950/90 rounded-2xl relative overflow-hidden border border-slate-800 cursor-pointer select-none flex flex-col justify-between"
             >
-              {/* PARALLAX ENVIRONMENT: Cyber Mountains, Moving Clouds, Trees & Towers */}
               <CyberEnvironment />
-
-              {/* Background Cyber Grid */}
               <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
 
               <div className="relative z-10 p-3 flex justify-between text-xs font-mono text-slate-400">
@@ -285,7 +312,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 <span>Avoid Alien Bugs, 404 Walls & Crystals!</span>
               </div>
 
-              {/* Start Screen Overlay */}
               {runnerState === 'START' && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/90 p-4 text-center">
                   <div className="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-3 animate-bounce">
@@ -304,7 +330,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 </div>
               )}
 
-              {/* Game Over Screen Overlay */}
               {runnerState === 'GAMEOVER' && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
                   <h3 className="text-2xl font-extrabold text-rose-400 font-mono mb-1">SYSTEM CRASH!</h3>
@@ -320,7 +345,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 </div>
               )}
 
-              {/* ANIMATED HUMAN DEVELOPER SPRITE */}
               <div
                 className="absolute left-[50px] bottom-[20px] z-10 transition-transform duration-75 flex items-center justify-center"
                 style={{
@@ -330,7 +354,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 <HumanRunnerSprite isJumping={isJumping} score={runnerScore} />
               </div>
 
-              {/* DIVERSE SHAPE & SIZE OBSTACLES */}
               {obstacles.map((obs) => (
                 <div
                   key={obs.id}
@@ -343,7 +366,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 </div>
               ))}
 
-              {/* Neon Running Track */}
               <div className="w-full h-6 bg-slate-900 border-t-2 border-cyan-400/80 relative z-10 flex items-center justify-between px-2 font-mono text-[10px] text-cyan-400/80 shadow-[0_-4px_12px_rgba(56,189,248,0.3)]">
                 <span>-----------------------------</span>
                 <span>CYBER_RUNNER_TRACK</span>
@@ -353,13 +375,13 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           </div>
         )}
 
-        {/* Tab 2: CODE INVADERS */}
+        {/* Tab 3: CODE INVADERS */}
         {activeTab === 'INVADERS' && <CodeInvadersGame />}
 
-        {/* Tab 3: CYBER SNAKE */}
+        {/* Tab 4: CYBER SNAKE */}
         {activeTab === 'SNAKE' && <CyberSnakeGame />}
 
-        {/* Tab 4: MEMORY MATRIX */}
+        {/* Tab 5: MEMORY MATRIX */}
         {activeTab === 'MEMORY' && <MemoryMatrixGame />}
       </div>
     </div>
