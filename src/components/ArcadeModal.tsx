@@ -21,6 +21,7 @@ interface Obstacle {
   label: string;
   width: number;
   height: number;
+  isShattered?: boolean;
 }
 
 export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => {
@@ -32,6 +33,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
   const [runnerScore, setRunnerScore] = useState(0);
   const [runnerHighScore, setRunnerHighScore] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
+  const [isFallen, setIsFallen] = useState(false);
   const [playerY, setPlayerY] = useState(0);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
 
@@ -68,16 +70,16 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
   };
 
   const triggerJump = () => {
-    if (runnerState !== 'PLAYING') return;
+    if (runnerState !== 'PLAYING' || isFallen) return;
     if (!isJumpingRef.current) {
       isJumpingRef.current = true;
       setIsJumping(true);
       audioEngine.playClickSound(900);
 
-      let velocity = 13;
+      let velocity = 18;
       const jumpInterval = setInterval(() => {
         playerYRef.current += velocity;
-        velocity -= 0.8;
+        velocity -= 1.1;
 
         if (playerYRef.current <= 0) {
           playerYRef.current = 0;
@@ -109,6 +111,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
 
   const startRunner = () => {
     setRunnerState('PLAYING');
+    setIsFallen(false);
     setRunnerScore(0);
     scoreRef.current = 0;
     setObstacles([]);
@@ -124,12 +127,12 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
     if (runnerState !== 'PLAYING' || activeTab !== 'RUNNER') return;
 
     const obstacleConfigs: { type: ObstacleType; label: string; width: number; height: number }[] = [
-      { type: 'alienBug', label: '<Bug />', width: 48, height: 40 },
-      { type: 'wall404', label: '404 ERR', width: 64, height: 55 },
-      { type: 'nullCrystal', label: 'NullPtr', width: 36, height: 65 },
-      { type: 'serverFire', label: '500 ERR', width: 56, height: 44 },
-      { type: 'syntaxSpike', label: 'Syntax', width: 56, height: 35 },
-      { type: 'memoryBlob', label: 'MemLeak', width: 72, height: 32 },
+      { type: 'alienBug', label: '<Bug />', width: 85, height: 80 },
+      { type: 'wall404', label: '404 ERR', width: 95, height: 85 },
+      { type: 'nullCrystal', label: 'NullPtr', width: 70, height: 95 },
+      { type: 'serverFire', label: '500 ERR', width: 85, height: 80 },
+      { type: 'syntaxSpike', label: 'Syntax', width: 85, height: 70 },
+      { type: 'memoryBlob', label: 'MemLeak', width: 95, height: 70 },
     ];
 
     let animationFrameId: number;
@@ -140,13 +143,13 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       scoreRef.current += 1;
       setRunnerScore(Math.floor(scoreRef.current / 5));
 
-      if (now - lastObstacleTime.current > 1300 - Math.min(scoreRef.current * 0.4, 550)) {
+      if (now - lastObstacleTime.current > 1400 - Math.min(scoreRef.current * 0.4, 600)) {
         const randomObstacle = obstacleConfigs[Math.floor(Math.random() * obstacleConfigs.length)];
         setObstacles((prev) => [
           ...prev,
           {
             id: now,
-            x: 640,
+            x: 800,
             ...randomObstacle,
           },
         ]);
@@ -154,21 +157,21 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       }
 
       setObstacles((prev) => {
-        const speed = 6 + Math.min(scoreRef.current * 0.005, 8);
+        const speed = 7 + Math.min(scoreRef.current * 0.005, 9);
         const updated = prev
           .map((obs) => ({ ...obs, x: obs.x - speed }))
-          .filter((obs) => obs.x > -100);
+          .filter((obs) => obs.x > -120);
 
-        const playerX = 50;
-        const playerWidth = 32;
+        const playerX = 60;
+        const playerWidth = 60;
 
         for (const obs of updated) {
           if (
             obs.x < playerX + playerWidth &&
             obs.x + obs.width > playerX &&
-            playerYRef.current < obs.height - 10
+            playerYRef.current < obs.height - 20
           ) {
-            endRunner();
+            triggerRunnerCrash(obs.id);
             return updated;
           }
         }
@@ -183,9 +186,21 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
     return () => cancelAnimationFrame(animationFrameId);
   }, [runnerState, activeTab]);
 
+  const triggerRunnerCrash = (hitObstacleId: number) => {
+    setIsFallen(true);
+    audioEngine.playClickSound(200);
+
+    setObstacles((prev) =>
+      prev.map((obs) => (obs.id === hitObstacleId ? { ...obs, isShattered: true } : obs))
+    );
+
+    setTimeout(() => {
+      endRunner();
+    }, 1000);
+  };
+
   const endRunner = () => {
     setRunnerState('GAMEOVER');
-    audioEngine.playClickSound(300);
 
     const currentFinalScore = Math.floor(scoreRef.current / 5);
     if (currentFinalScore > runnerHighScore) {
@@ -218,7 +233,6 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* Fullscreen Toggle */}
             <button
               onClick={toggleFullscreenMode}
               className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 hover:text-white transition-colors flex items-center gap-1.5 font-mono text-xs"
@@ -318,7 +332,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           </button>
         </div>
 
-        {/* Tab 1: CYBER TRAFFIC RACER */}
+        {/* Tab Content */}
         <div className="w-full flex-1 flex flex-col justify-center items-center overflow-hidden">
           {activeTab === 'RACER' && <CyberTrafficRacerGame isFullscreen={isFullscreen} />}
 
@@ -327,7 +341,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
             <div className="w-full h-full flex flex-col items-center">
               <div className="w-full flex items-center justify-between mb-2 font-mono text-xs text-slate-300 shrink-0">
                 <div className="flex items-center gap-1 text-cyan-400 font-bold">
-                  <Zap className="w-4 h-4" /> CYBER RUNNER 🏃‍♂️
+                  <Zap className="w-4 h-4" /> 3D CYBER RUNNER 🏃‍♂️
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-amber-400 flex items-center gap-1">
@@ -353,59 +367,61 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
 
                 {runnerState === 'START' && (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/90 p-4 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-3 animate-bounce">
-                      <Zap className="w-6 h-6" />
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-3 animate-bounce">
+                      <Zap className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-white font-mono mb-1">CYBER RUNNER</h3>
-                    <p className="text-slate-400 text-xs font-mono mb-4">
+                    <h3 className="text-2xl font-black text-white font-mono mb-2">CYBER RUNNER</h3>
+                    <p className="text-slate-400 text-xs sm:text-sm font-mono mb-6 max-w-md">
                       Guide Saran Neralla through cyber mountains & jump over alien bugs & 404 walls!
                     </p>
                     <button
                       onClick={startRunner}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                      className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-sm font-mono flex items-center gap-2 shadow-xl shadow-cyan-500/25"
                     >
-                      <Play className="w-4 h-4" /> START RUNNER
+                      <Play className="w-5 h-5" /> START RUNNER
                     </button>
                   </div>
                 )}
 
                 {runnerState === 'GAMEOVER' && (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
-                    <h3 className="text-2xl font-extrabold text-rose-400 font-mono mb-1">SYSTEM CRASH!</h3>
-                    <p className="text-slate-300 text-sm font-mono mb-1">
+                    <h3 className="text-3xl font-extrabold text-rose-400 font-mono mb-2">RUNNER CRASH!</h3>
+                    <p className="text-slate-300 text-base font-mono mb-6">
                       Score: <strong className="text-cyan-400">{runnerScore}</strong> | High Score: <strong className="text-amber-400">{runnerHighScore}</strong>
                     </p>
                     <button
                       onClick={startRunner}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                      className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-sm font-mono flex items-center gap-2 shadow-xl shadow-cyan-500/25"
                     >
-                      <RotateCcw className="w-4 h-4" /> TRY AGAIN [SPACE]
+                      <RotateCcw className="w-5 h-5" /> TRY AGAIN [SPACE]
                     </button>
                   </div>
                 )}
 
+                {/* Large Human Developer Sprite */}
                 <div
-                  className="absolute left-[50px] bottom-[20px] z-10 transition-transform duration-75 flex items-center justify-center"
+                  className="absolute left-[60px] bottom-[30px] z-10 transition-transform duration-75 flex items-center justify-center"
                   style={{
                     transform: `translateY(${-playerY}px)`,
                   }}
                 >
-                  <HumanRunnerSprite isJumping={isJumping} score={runnerScore} />
+                  <HumanRunnerSprite isJumping={isJumping} isFallen={isFallen} score={runnerScore} />
                 </div>
 
+                {/* Large Obstacle Graphics */}
                 {obstacles.map((obs) => (
                   <div
                     key={obs.id}
-                    className="absolute bottom-[24px] z-10"
+                    className="absolute bottom-[30px] z-10"
                     style={{
                       left: `${obs.x}px`,
                     }}
                   >
-                    <ObstacleGraphic type={obs.type} label={obs.label} />
+                    <ObstacleGraphic type={obs.type} label={obs.label} isShattered={obs.isShattered} />
                   </div>
                 ))}
 
-                <div className="w-full h-6 bg-slate-900 border-t-2 border-cyan-400/80 relative z-10 flex items-center justify-between px-2 font-mono text-[10px] text-cyan-400/80 shadow-[0_-4px_12px_rgba(56,189,248,0.3)]">
+                <div className="w-full h-8 bg-slate-900 border-t-2 border-cyan-400/80 relative z-10 flex items-center justify-between px-4 font-mono text-xs text-cyan-400/80 shadow-[0_-4px_12px_rgba(56,189,248,0.3)]">
                   <span>-----------------------------</span>
                   <span>CYBER_RUNNER_TRACK</span>
                   <span>-----------------------------</span>
