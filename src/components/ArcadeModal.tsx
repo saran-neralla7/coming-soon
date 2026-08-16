@@ -47,6 +47,26 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
     }
   }, []);
 
+  const toggleFullscreenMode = () => {
+    const nextState = !isFullscreen;
+    setIsFullscreen(nextState);
+    audioEngine.playClickSound(800);
+
+    try {
+      if (nextState) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
   const triggerJump = () => {
     if (runnerState !== 'PLAYING') return;
     if (!isJumpingRef.current) {
@@ -178,14 +198,20 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center ${
+        isFullscreen ? 'p-0 bg-slate-950' : 'p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md'
+      }`}
+    >
       <div
         className={`w-full ${
-          isFullscreen ? 'h-full max-w-full rounded-none' : 'max-w-4xl h-auto max-h-[92vh] rounded-3xl'
-        } glass-panel-glow p-4 sm:p-6 relative border border-cyan-500/40 shadow-2xl overflow-y-auto flex flex-col items-center transition-all duration-300`}
+          isFullscreen
+            ? 'h-full w-full max-w-full rounded-none border-none p-4 sm:p-6 flex flex-col justify-between bg-slate-950'
+            : 'max-w-4xl h-auto max-h-[94vh] rounded-3xl glass-panel-glow p-4 sm:p-6 relative border border-cyan-500/40 shadow-2xl flex flex-col items-center'
+        } transition-all duration-300 overflow-hidden`}
       >
         {/* Header Bar */}
-        <div className="w-full flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+        <div className="w-full flex items-center justify-between mb-3 border-b border-slate-800 pb-3 shrink-0">
           <div className="flex items-center gap-2 font-mono text-sm text-cyan-400 font-bold">
             <Gamepad2 className="w-5 h-5 text-cyan-400 animate-pulse" />
             <span>NERALLA.IN CYBER ARCADE</span>
@@ -194,15 +220,25 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
           <div className="flex items-center space-x-2">
             {/* Fullscreen Toggle */}
             <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+              onClick={toggleFullscreenMode}
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 hover:text-white transition-colors flex items-center gap-1.5 font-mono text-xs"
               title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Exit Fullscreen</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Fullscreen</span>
+                </>
+              )}
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -210,7 +246,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Game Tabs Selector */}
-        <div className="w-full grid grid-cols-5 gap-1.5 sm:gap-2 mb-4">
+        <div className="w-full grid grid-cols-5 gap-1.5 sm:gap-2 mb-4 shrink-0">
           <button
             onClick={() => {
               setActiveTab('RACER');
@@ -283,106 +319,110 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Tab 1: CYBER TRAFFIC RACER */}
-        {activeTab === 'RACER' && <CyberTrafficRacerGame />}
+        <div className="w-full flex-1 flex flex-col justify-center items-center overflow-hidden">
+          {activeTab === 'RACER' && <CyberTrafficRacerGame isFullscreen={isFullscreen} />}
 
-        {/* Tab 2: CYBER RUNNER */}
-        {activeTab === 'RUNNER' && (
-          <div className="w-full flex flex-col items-center">
-            <div className="w-full flex items-center justify-between mb-2 font-mono text-xs text-slate-300">
-              <div className="flex items-center gap-1 text-cyan-400 font-bold">
-                <Zap className="w-4 h-4" /> CYBER RUNNER 🏃‍♂️
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-amber-400 flex items-center gap-1">
-                  <Trophy className="w-3.5 h-3.5" /> HI: {runnerHighScore}
-                </span>
-                <span className="text-white font-bold">SCORE: {runnerScore}</span>
-              </div>
-            </div>
-
-            <div
-              onClick={triggerJump}
-              className="w-full h-72 sm:h-80 bg-slate-950/90 rounded-2xl relative overflow-hidden border border-slate-800 cursor-pointer select-none flex flex-col justify-between"
-            >
-              <CyberEnvironment />
-              <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
-
-              <div className="relative z-10 p-3 flex justify-between text-xs font-mono text-slate-400">
-                <span>[SPACE] or TAP to Jump</span>
-                <span>Avoid Alien Bugs, 404 Walls & Crystals!</span>
-              </div>
-
-              {runnerState === 'START' && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/90 p-4 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-3 animate-bounce">
-                    <Zap className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white font-mono mb-1">CYBER RUNNER</h3>
-                  <p className="text-slate-400 text-xs font-mono mb-4">
-                    Guide Saran Neralla through cyber mountains & jump over alien bugs & 404 walls!
-                  </p>
-                  <button
-                    onClick={startRunner}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
-                  >
-                    <Play className="w-4 h-4" /> START RUNNER
-                  </button>
+          {/* Tab 2: CYBER RUNNER */}
+          {activeTab === 'RUNNER' && (
+            <div className="w-full h-full flex flex-col items-center">
+              <div className="w-full flex items-center justify-between mb-2 font-mono text-xs text-slate-300 shrink-0">
+                <div className="flex items-center gap-1 text-cyan-400 font-bold">
+                  <Zap className="w-4 h-4" /> CYBER RUNNER 🏃‍♂️
                 </div>
-              )}
-
-              {runnerState === 'GAMEOVER' && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
-                  <h3 className="text-2xl font-extrabold text-rose-400 font-mono mb-1">SYSTEM CRASH!</h3>
-                  <p className="text-slate-300 text-sm font-mono mb-1">
-                    Score: <strong className="text-cyan-400">{runnerScore}</strong> | High Score: <strong className="text-amber-400">{runnerHighScore}</strong>
-                  </p>
-                  <button
-                    onClick={startRunner}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
-                  >
-                    <RotateCcw className="w-4 h-4" /> TRY AGAIN [SPACE]
-                  </button>
+                <div className="flex items-center gap-4">
+                  <span className="text-amber-400 flex items-center gap-1">
+                    <Trophy className="w-3.5 h-3.5" /> HI: {runnerHighScore}
+                  </span>
+                  <span className="text-white font-bold">SCORE: {runnerScore}</span>
                 </div>
-              )}
+              </div>
 
               <div
-                className="absolute left-[50px] bottom-[20px] z-10 transition-transform duration-75 flex items-center justify-center"
-                style={{
-                  transform: `translateY(${-playerY}px)`,
-                }}
+                onClick={triggerJump}
+                className={`w-full bg-slate-950/90 rounded-2xl relative overflow-hidden border border-slate-800 cursor-pointer select-none flex flex-col justify-between ${
+                  isFullscreen ? 'h-full flex-1 min-h-[500px]' : 'h-80'
+                }`}
               >
-                <HumanRunnerSprite isJumping={isJumping} score={runnerScore} />
-              </div>
+                <CyberEnvironment />
+                <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
 
-              {obstacles.map((obs) => (
+                <div className="relative z-10 p-3 flex justify-between text-xs font-mono text-slate-400">
+                  <span>[SPACE] or TAP to Jump</span>
+                  <span>Avoid Alien Bugs, 404 Walls & Crystals!</span>
+                </div>
+
+                {runnerState === 'START' && (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/90 p-4 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-3 animate-bounce">
+                      <Zap className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white font-mono mb-1">CYBER RUNNER</h3>
+                    <p className="text-slate-400 text-xs font-mono mb-4">
+                      Guide Saran Neralla through cyber mountains & jump over alien bugs & 404 walls!
+                    </p>
+                    <button
+                      onClick={startRunner}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                    >
+                      <Play className="w-4 h-4" /> START RUNNER
+                    </button>
+                  </div>
+                )}
+
+                {runnerState === 'GAMEOVER' && (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
+                    <h3 className="text-2xl font-extrabold text-rose-400 font-mono mb-1">SYSTEM CRASH!</h3>
+                    <p className="text-slate-300 text-sm font-mono mb-1">
+                      Score: <strong className="text-cyan-400">{runnerScore}</strong> | High Score: <strong className="text-amber-400">{runnerHighScore}</strong>
+                    </p>
+                    <button
+                      onClick={startRunner}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                    >
+                      <RotateCcw className="w-4 h-4" /> TRY AGAIN [SPACE]
+                    </button>
+                  </div>
+                )}
+
                 <div
-                  key={obs.id}
-                  className="absolute bottom-[24px] z-10"
+                  className="absolute left-[50px] bottom-[20px] z-10 transition-transform duration-75 flex items-center justify-center"
                   style={{
-                    left: `${obs.x}px`,
+                    transform: `translateY(${-playerY}px)`,
                   }}
                 >
-                  <ObstacleGraphic type={obs.type} label={obs.label} />
+                  <HumanRunnerSprite isJumping={isJumping} score={runnerScore} />
                 </div>
-              ))}
 
-              <div className="w-full h-6 bg-slate-900 border-t-2 border-cyan-400/80 relative z-10 flex items-center justify-between px-2 font-mono text-[10px] text-cyan-400/80 shadow-[0_-4px_12px_rgba(56,189,248,0.3)]">
-                <span>-----------------------------</span>
-                <span>CYBER_RUNNER_TRACK</span>
-                <span>-----------------------------</span>
+                {obstacles.map((obs) => (
+                  <div
+                    key={obs.id}
+                    className="absolute bottom-[24px] z-10"
+                    style={{
+                      left: `${obs.x}px`,
+                    }}
+                  >
+                    <ObstacleGraphic type={obs.type} label={obs.label} />
+                  </div>
+                ))}
+
+                <div className="w-full h-6 bg-slate-900 border-t-2 border-cyan-400/80 relative z-10 flex items-center justify-between px-2 font-mono text-[10px] text-cyan-400/80 shadow-[0_-4px_12px_rgba(56,189,248,0.3)]">
+                  <span>-----------------------------</span>
+                  <span>CYBER_RUNNER_TRACK</span>
+                  <span>-----------------------------</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Tab 3: CODE INVADERS */}
-        {activeTab === 'INVADERS' && <CodeInvadersGame />}
+          {/* Tab 3: CODE INVADERS */}
+          {activeTab === 'INVADERS' && <CodeInvadersGame />}
 
-        {/* Tab 4: CYBER SNAKE */}
-        {activeTab === 'SNAKE' && <CyberSnakeGame />}
+          {/* Tab 4: CYBER SNAKE */}
+          {activeTab === 'SNAKE' && <CyberSnakeGame />}
 
-        {/* Tab 5: MEMORY MATRIX */}
-        {activeTab === 'MEMORY' && <MemoryMatrixGame />}
+          {/* Tab 5: MEMORY MATRIX */}
+          {activeTab === 'MEMORY' && <MemoryMatrixGame />}
+        </div>
       </div>
     </div>
   );

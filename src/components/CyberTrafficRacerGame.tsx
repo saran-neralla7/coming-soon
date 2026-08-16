@@ -4,6 +4,10 @@ import { audioEngine } from '../utils/audioEngine';
 import { VehicleModel3D } from './3DVehicleModels';
 import { CrashExplosion } from './CrashExplosion';
 
+interface CyberTrafficRacerGameProps {
+  isFullscreen?: boolean;
+}
+
 interface TrafficCar {
   id: number;
   lane: number; // 0, 1, 2 (Left, Center, Right)
@@ -13,7 +17,7 @@ interface TrafficCar {
   type: string;
 }
 
-export const CyberTrafficRacerGame: React.FC = () => {
+export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ isFullscreen = false }) => {
   const [gameState, setGameState] = useState<'SELECT' | 'PLAYING' | 'GAMEOVER'>('SELECT');
   const [vehicle, setVehicle] = useState<'CAR' | 'BIKE'>('CAR');
   const [lane, setLane] = useState<number>(1); // 0 = Left, 1 = Center, 2 = Right
@@ -119,7 +123,7 @@ export const CyberTrafficRacerGame: React.FC = () => {
         .filter((c) => c.y < 115);
 
       // Collision Check
-      const playerYPos = 70;
+      const playerYPos = 72;
       for (const car of trafficRef.current) {
         if (
           car.lane === laneRef.current &&
@@ -161,9 +165,9 @@ export const CyberTrafficRacerGame: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center select-none">
+    <div className={`w-full flex flex-col items-center select-none ${isFullscreen ? 'h-full flex-1' : ''}`}>
       {/* Header Bar */}
-      <div className="w-full flex items-center justify-between mb-3 font-mono text-xs text-slate-300">
+      <div className="w-full flex items-center justify-between mb-3 font-mono text-xs text-slate-300 shrink-0">
         <div className="flex items-center gap-1 text-cyan-400 font-bold">
           <Zap className="w-4 h-4 text-cyan-400" /> 3D CYBER TRAFFIC RACER 🏎️
         </div>
@@ -177,12 +181,16 @@ export const CyberTrafficRacerGame: React.FC = () => {
       </div>
 
       {/* 3D Perspective Canvas Box */}
-      <div className="w-full h-80 bg-slate-950/95 rounded-2xl relative overflow-hidden border border-slate-800 flex flex-col justify-between shadow-2xl">
+      <div
+        className={`w-full bg-slate-950/95 rounded-2xl relative overflow-hidden border border-slate-800 flex flex-col justify-between shadow-2xl transition-all duration-300 ${
+          isFullscreen ? 'h-full flex-1 min-h-[500px]' : 'h-80'
+        }`}
+      >
         <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
 
         {/* Dynamic Road Track with Moving Stripes */}
         <div className="absolute inset-0 flex justify-center overflow-hidden">
-          <div className="w-4/5 h-full bg-slate-900/90 border-x-4 border-cyan-500/60 relative flex justify-around shadow-[0_0_25px_rgba(56,189,248,0.25)]">
+          <div className="w-4/5 h-full bg-slate-900/90 border-x-4 border-cyan-500/60 relative flex justify-around shadow-[0_0_30px_rgba(56,189,248,0.3)]">
             <div className="w-0.5 h-full border-r-2 border-dashed border-cyan-400/40" />
             <div className="w-0.5 h-full border-r-2 border-dashed border-cyan-400/40" />
           </div>
@@ -194,46 +202,46 @@ export const CyberTrafficRacerGame: React.FC = () => {
         {/* Vehicle Selector Screen */}
         {gameState === 'SELECT' && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center">
-            <h3 className="text-2xl font-black text-white font-mono mb-1">3D CYBER RACER</h3>
-            <p className="text-slate-400 text-xs font-mono mb-6 max-w-sm">
+            <h3 className="text-2xl sm:text-3xl font-black text-white font-mono mb-2">3D CYBER RACER</h3>
+            <p className="text-slate-400 text-xs sm:text-sm font-mono mb-6 max-w-md">
               Select your 3D vehicle & dodge incoming highway traffic:
             </p>
-            <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+            <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
               <button
                 onClick={() => startGame('CAR')}
-                className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-cyan-500/60 hover:border-cyan-400 text-cyan-300 font-mono text-xs font-bold transition-all flex flex-col items-center gap-2 group shadow-lg shadow-cyan-500/20"
+                className="p-5 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-cyan-500/60 hover:border-cyan-400 text-cyan-300 font-mono text-sm font-bold transition-all flex flex-col items-center gap-2 group shadow-xl shadow-cyan-500/20"
               >
-                <Car className="w-8 h-8 text-cyan-400 group-hover:scale-110 transition-transform" />
+                <Car className="w-10 h-10 text-cyan-400 group-hover:scale-110 transition-transform" />
                 <span>3D SUPERCAR</span>
               </button>
 
               <button
                 onClick={() => startGame('BIKE')}
-                className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-purple-500/60 hover:border-purple-400 text-purple-300 font-mono text-xs font-bold transition-all flex flex-col items-center gap-2 group shadow-lg shadow-purple-500/20"
+                className="p-5 rounded-2xl bg-slate-900 hover:bg-slate-800 border-2 border-purple-500/60 hover:border-purple-400 text-purple-300 font-mono text-sm font-bold transition-all flex flex-col items-center gap-2 group shadow-xl shadow-purple-500/20"
               >
-                <Bike className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
+                <Bike className="w-10 h-10 text-purple-400 group-hover:scale-110 transition-transform" />
                 <span>NEON BIKE</span>
               </button>
             </div>
-            <p className="text-slate-500 text-[11px] font-mono mt-4">Use [LEFT / RIGHT] Arrow keys or A / D to steer</p>
+            <p className="text-slate-500 text-xs font-mono mt-6">Use [LEFT / RIGHT] Arrow keys or A / D to steer</p>
           </div>
         )}
 
         {/* Game Over Screen */}
         {gameState === 'GAMEOVER' && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-rose-950 border border-rose-800 flex items-center justify-center text-rose-400 mb-3 animate-bounce">
-              <ShieldAlert className="w-6 h-6" />
+            <div className="w-14 h-14 rounded-2xl bg-rose-950 border border-rose-800 flex items-center justify-center text-rose-400 mb-4 animate-bounce">
+              <ShieldAlert className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-extrabold text-rose-400 font-mono mb-1">TRAFFIC CRASH!</h3>
-            <p className="text-slate-300 text-sm font-mono mb-4">
+            <h3 className="text-3xl font-extrabold text-rose-400 font-mono mb-2">TRAFFIC CRASH!</h3>
+            <p className="text-slate-300 text-base font-mono mb-6">
               Final Score: <strong className="text-cyan-400">{score}</strong> | High Score: <strong className="text-amber-400">{highScore}</strong>
             </p>
             <button
               onClick={() => setGameState('SELECT')}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs font-mono flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-sm font-mono flex items-center gap-2 shadow-xl shadow-cyan-500/25"
             >
-              <RotateCcw className="w-4 h-4" /> RESTART RACER
+              <RotateCcw className="w-5 h-5" /> RESTART RACER
             </button>
           </div>
         )}
@@ -241,7 +249,7 @@ export const CyberTrafficRacerGame: React.FC = () => {
         {/* 3D Player Vehicle Model */}
         {gameState === 'PLAYING' && (
           <div
-            className="absolute bottom-6 z-10 transition-all duration-150 transform -translate-x-1/2 flex flex-col items-center"
+            className="absolute bottom-8 z-10 transition-all duration-150 transform -translate-x-1/2 flex flex-col items-center"
             style={{
               left: `${lane === 0 ? '24%' : lane === 1 ? '50%' : '76%'}`,
             }}
@@ -271,16 +279,16 @@ export const CyberTrafficRacerGame: React.FC = () => {
 
         {/* Touch / On-screen Steering Buttons */}
         {gameState === 'PLAYING' && (
-          <div className="absolute bottom-2 inset-x-0 z-20 flex justify-between px-6 pointer-events-auto">
+          <div className="absolute bottom-3 inset-x-0 z-20 flex justify-between px-6 pointer-events-auto">
             <button
               onClick={() => handleLaneChange('LEFT')}
-              className="px-6 py-3 rounded-2xl bg-slate-900/90 border border-cyan-500/50 text-cyan-300 font-mono text-sm font-bold active:scale-95 shadow-lg"
+              className="px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/50 text-cyan-300 font-mono text-base font-bold active:scale-95 shadow-xl"
             >
               ◀ LEFT
             </button>
             <button
               onClick={() => handleLaneChange('RIGHT')}
-              className="px-6 py-3 rounded-2xl bg-slate-900/90 border border-cyan-500/50 text-cyan-300 font-mono text-sm font-bold active:scale-95 shadow-lg"
+              className="px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/50 text-cyan-300 font-mono text-base font-bold active:scale-95 shadow-xl"
             >
               RIGHT ▶
             </button>
