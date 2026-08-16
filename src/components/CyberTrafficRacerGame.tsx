@@ -42,7 +42,7 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
   const handleLaneChange = (dir: 'LEFT' | 'RIGHT') => {
     if (gameState !== 'PLAYING') return;
     setSteeringDir(dir);
-    setTimeout(() => setSteeringDir('CENTER'), 300);
+    setTimeout(() => setSteeringDir('CENTER'), 250);
 
     if (dir === 'LEFT' && laneRef.current > 0) {
       laneRef.current -= 1;
@@ -97,11 +97,12 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
       scoreRef.current += 1;
       setScore(Math.floor(scoreRef.current / 3));
 
-      const currentSpeed = 1.2 + Math.min(scoreRef.current * 0.0008, 2.4);
+      // Gentle speed progression
+      const currentSpeed = 1.0 + Math.min(scoreRef.current * 0.0006, 2.0);
       setSpeedLevel(+(currentSpeed).toFixed(1));
 
       // Spawn traffic at reasonable intervals
-      if (now - lastSpawnTime.current > 1200 - Math.min(scoreRef.current * 0.3, 600)) {
+      if (now - lastSpawnTime.current > 1400 - Math.min(scoreRef.current * 0.3, 650)) {
         const randomLane = Math.floor(Math.random() * 3);
         const randomColor = carColors[Math.floor(Math.random() * carColors.length)];
         const newCar: TrafficCar = {
@@ -117,19 +118,21 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
 
       // Move traffic downwards smoothly
       trafficRef.current = trafficRef.current
-        .map((c) => ({ ...c, y: c.y + currentSpeed * 1.4 }))
-        .filter((c) => c.y < 125);
+        .map((c) => ({ ...c, y: c.y + currentSpeed * 1.2 }))
+        .filter((c) => c.y < 120);
 
-      // Render updated traffic state ALWAYS before checking collision
+      // ALWAYS update React state so traffic cars are rendered smoothly every frame
       setTraffic([...trafficRef.current]);
 
-      // Accurate Hitbox Collision Check (Player vehicle is at bottom ~80%)
-      const PLAYER_COLLISION_Y = 80;
+      // ACCURATE COLLISION CHECK:
+      // Player vehicle is strictly fixed at top: 78% (near track bottom).
+      // Hitbox triggers only when traffic car reaches top: 74% - 84% in the same lane!
+      const PLAYER_Y_TOP = 78;
       for (const car of trafficRef.current) {
         if (
           car.lane === laneRef.current &&
-          car.y >= PLAYER_COLLISION_Y - 8 &&
-          car.y <= PLAYER_COLLISION_Y + 8
+          car.y >= PLAYER_Y_TOP - 6 &&
+          car.y <= PLAYER_Y_TOP + 6
         ) {
           triggerCrash();
           return;
@@ -201,7 +204,7 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
 
         {/* Vehicle Selector Screen */}
         {gameState === 'SELECT' && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center">
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center">
             <h3 className="text-2xl sm:text-3xl font-black text-white font-mono mb-2">3D CYBER RACER</h3>
             <p className="text-slate-400 text-xs sm:text-sm font-mono mb-6 max-w-md">
               Select your 3D vehicle & dodge incoming highway traffic:
@@ -229,7 +232,7 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
 
         {/* Game Over Screen */}
         {gameState === 'GAMEOVER' && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/95 p-4 text-center">
             <div className="w-14 h-14 rounded-2xl bg-rose-950 border border-rose-800 flex items-center justify-center text-rose-400 mb-4 animate-bounce">
               <ShieldAlert className="w-8 h-8" />
             </div>
@@ -246,11 +249,12 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
           </div>
         )}
 
-        {/* 3D Player Vehicle Model */}
+        {/* Player 3D Vehicle Model - STRICTLY FIXED AT top: 78% */}
         {gameState === 'PLAYING' && (
           <div
-            className="absolute bottom-6 z-10 transition-all duration-150 transform -translate-x-1/2 flex flex-col items-center"
+            className="absolute z-20 transition-all duration-150 transform -translate-x-1/2 flex flex-col items-center"
             style={{
+              top: '78%',
               left: `${lane === 0 ? '22%' : lane === 1 ? '50%' : '78%'}`,
             }}
           >
@@ -275,8 +279,8 @@ export const CyberTrafficRacerGame: React.FC<CyberTrafficRacerGameProps> = ({ is
               >
                 {/* Oncoming Headlights */}
                 <div className="w-full flex justify-between px-1">
-                  <div className="w-2.5 h-2 rounded-sm bg-yellow-300 shadow-[0_0_8px_#fef08a]" />
-                  <div className="w-2.5 h-2 rounded-sm bg-yellow-300 shadow-[0_0_8px_#fef08a]" />
+                  <div className="w-2.5 h-2 rounded-sm bg-yellow-300 shadow-[0_0_10px_#fef08a]" />
+                  <div className="w-2.5 h-2 rounded-sm bg-yellow-300 shadow-[0_0_10px_#fef08a]" />
                 </div>
                 <Car className="w-7 h-7 rotate-180 text-slate-950 my-1" />
                 {/* Rear Brake Lights */}

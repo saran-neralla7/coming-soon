@@ -69,17 +69,18 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
     }
   };
 
+  // High Airborne Jump Physics
   const triggerJump = () => {
     if (runnerState !== 'PLAYING' || isFallen) return;
     if (!isJumpingRef.current) {
       isJumpingRef.current = true;
       setIsJumping(true);
-      audioEngine.playClickSound(900);
+      audioEngine.playClickSound(950);
 
-      let velocity = 18;
+      let velocity = 26; // Powerful jump impulse
       const jumpInterval = setInterval(() => {
         playerYRef.current += velocity;
-        velocity -= 1.1;
+        velocity -= 1.0; // Gravity
 
         if (playerYRef.current <= 0) {
           playerYRef.current = 0;
@@ -95,7 +96,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen || activeTab !== 'RUNNER') return;
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         e.preventDefault();
         if (runnerState === 'START' || runnerState === 'GAMEOVER') {
           startRunner();
@@ -127,12 +128,12 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
     if (runnerState !== 'PLAYING' || activeTab !== 'RUNNER') return;
 
     const obstacleConfigs: { type: ObstacleType; label: string; width: number; height: number }[] = [
-      { type: 'alienBug', label: '<Bug />', width: 85, height: 80 },
-      { type: 'wall404', label: '404 ERR', width: 95, height: 85 },
-      { type: 'nullCrystal', label: 'NullPtr', width: 70, height: 95 },
-      { type: 'serverFire', label: '500 ERR', width: 85, height: 80 },
-      { type: 'syntaxSpike', label: 'Syntax', width: 85, height: 70 },
-      { type: 'memoryBlob', label: 'MemLeak', width: 95, height: 70 },
+      { type: 'alienBug', label: '<Bug />', width: 85, height: 75 },
+      { type: 'wall404', label: '404 ERR', width: 95, height: 80 },
+      { type: 'nullCrystal', label: 'NullPtr', width: 70, height: 90 },
+      { type: 'serverFire', label: '500 ERR', width: 85, height: 75 },
+      { type: 'syntaxSpike', label: 'Syntax', width: 85, height: 65 },
+      { type: 'memoryBlob', label: 'MemLeak', width: 95, height: 65 },
     ];
 
     let animationFrameId: number;
@@ -143,7 +144,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       scoreRef.current += 1;
       setRunnerScore(Math.floor(scoreRef.current / 5));
 
-      if (now - lastObstacleTime.current > 1400 - Math.min(scoreRef.current * 0.4, 600)) {
+      if (now - lastObstacleTime.current > 1500 - Math.min(scoreRef.current * 0.4, 650)) {
         const randomObstacle = obstacleConfigs[Math.floor(Math.random() * obstacleConfigs.length)];
         setObstacles((prev) => [
           ...prev,
@@ -157,19 +158,20 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
       }
 
       setObstacles((prev) => {
-        const speed = 7 + Math.min(scoreRef.current * 0.005, 9);
+        const speed = 6.5 + Math.min(scoreRef.current * 0.004, 8);
         const updated = prev
           .map((obs) => ({ ...obs, x: obs.x - speed }))
           .filter((obs) => obs.x > -120);
 
         const playerX = 60;
-        const playerWidth = 60;
+        const playerWidth = 55;
 
         for (const obs of updated) {
+          // Generous jump clearance check
           if (
             obs.x < playerX + playerWidth &&
             obs.x + obs.width > playerX &&
-            playerYRef.current < obs.height - 20
+            playerYRef.current < obs.height - 35
           ) {
             triggerRunnerCrash(obs.id);
             return updated;
@@ -361,7 +363,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
                 <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
 
                 <div className="relative z-10 p-3 flex justify-between text-xs font-mono text-slate-400">
-                  <span>[SPACE] or TAP to Jump</span>
+                  <span>[SPACE], [W], [UP] or TAP to Jump</span>
                   <span>Avoid Alien Bugs, 404 Walls & Crystals!</span>
                 </div>
 
