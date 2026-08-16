@@ -1,11 +1,21 @@
 import { motion } from 'framer-motion';
 import { ThreeCanvas } from './components/ThreeCanvas';
-import { Cpu, Sparkles } from 'lucide-react';
+import { Cpu, Sparkles, Code2, Terminal, Brackets, Database, GitBranch, Binary, Layers } from 'lucide-react';
 
 export function App() {
+  const codeBadges = [
+    { text: '</>', icon: Code2, x: '12%', y: '22%', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-950/60' },
+    { text: '{ ... }', icon: Brackets, x: '82%', y: '18%', color: 'text-purple-400 border-purple-500/30 bg-purple-950/60' },
+    { text: 'git push', icon: GitBranch, x: '15%', y: '72%', color: 'text-pink-400 border-pink-500/30 bg-pink-950/60' },
+    { text: '010101', icon: Binary, x: '85%', y: '76%', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-950/60' },
+    { text: 'async () =>', icon: Terminal, x: '8%', y: '48%', color: 'text-amber-400 border-amber-500/30 bg-amber-950/60' },
+    { text: 'SQL & DB', icon: Database, x: '88%', y: '46%', color: 'text-sky-400 border-sky-500/30 bg-sky-950/60' },
+    { text: 'sys.init()', icon: Layers, x: '50%', y: '12%', color: 'text-cyan-300 border-cyan-500/30 bg-cyan-950/60' },
+  ];
+
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden font-sans flex flex-col justify-between items-center">
-      {/* 3D WebGL Background Scene with Interactive Floating Objects */}
+      {/* 3D WebGL Background Scene with Interactive Floating 3D Coding Objects */}
       <ThreeCanvas />
 
       {/* Cyber Grid Background Overlay */}
@@ -14,6 +24,35 @@ export function App() {
       {/* Radial Neon Lights */}
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[160px] pointer-events-none z-0" />
       <div className="fixed bottom-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[150px] pointer-events-none z-0" />
+
+      {/* Floating Animated Coding Badges around the Screen */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {codeBadges.map((badge, idx) => {
+          const IconComp = badge.icon;
+          return (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{
+                opacity: [0.4, 0.9, 0.4],
+                y: [0, -15, 0],
+                x: [0, idx % 2 === 0 ? 10 : -10, 0],
+              }}
+              transition={{
+                duration: 4 + (idx % 3),
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: idx * 0.4,
+              }}
+              style={{ left: badge.x, top: badge.y }}
+              className={`absolute hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-2xl border font-mono text-xs shadow-xl backdrop-blur-md ${badge.color}`}
+            >
+              <IconComp className="w-4 h-4 animate-pulse" />
+              <span>{badge.text}</span>
+            </motion.div>
+          );
+        })}
+      </div>
 
       {/* Top Header Branding */}
       <header className="relative z-10 w-full pt-8 px-6 text-center">

@@ -5,6 +5,34 @@ interface ThreeCanvasProps {
   interactiveSpeed?: number;
 }
 
+// Function to generate high-DPI 2D canvas texture with text code symbols
+function createCodeTextTexture(text: string, colorHex: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, 256, 256);
+    ctx.font = 'bold 72px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Outer Glow Effect
+    ctx.shadowColor = colorHex;
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = colorHex;
+    ctx.fillText(text, 128, 128);
+
+    // Sharp inner fill
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 0;
+    ctx.fillText(text, 128, 128);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 export const ThreeCanvas: React.FC<ThreeCanvasProps> = ({ interactiveSpeed = 1 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -95,7 +123,77 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = ({ interactiveSpeed = 1 }
     orbiters.push({ mesh: webMesh, angle: (3 * Math.PI) / 2, radius: 6.5, speed: -0.01 });
     orbiterGroup.add(webMesh);
 
-    // 3. Particle Starfield Constellation
+    // 3. Floating 3D Coding Symbol Sprites (</>, { }, =>, 0101, fn(), [ ], git, API, //)
+    const codeSymbols = [
+      '</>',
+      '{ }',
+      '=>',
+      '0101',
+      'fn()',
+      '[ ]',
+      'git',
+      'API',
+      '//',
+      'SQL',
+      'const',
+      'return',
+      '<div/>',
+      'async',
+      'npm',
+      'AI',
+      '01',
+      'npm run',
+      'build',
+      'v2.0',
+    ];
+
+    const colors = ['#38bdf8', '#a855f7', '#ec4899', '#34d399', '#f59e0b', '#6366f1'];
+    const floatingCodeGroup = new THREE.Group();
+    scene.add(floatingCodeGroup);
+
+    const floatingItems: {
+      sprite: THREE.Sprite;
+      initialY: number;
+      speedY: number;
+      rotSpeed: number;
+      amplitude: number;
+      phase: number;
+    }[] = [];
+
+    codeSymbols.forEach((sym, index) => {
+      const colorHex = colors[index % colors.length];
+      const texture = createCodeTextTexture(sym, colorHex);
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+      });
+
+      const sprite = new THREE.Sprite(spriteMaterial);
+      const scale = 1.4 + Math.random() * 0.8;
+      sprite.scale.set(scale, scale, 1);
+
+      // Random position distribution around the space
+      const radius = 6 + Math.random() * 12;
+      const angle = (index / codeSymbols.length) * Math.PI * 2 + (Math.random() - 0.5);
+      const yPos = (Math.random() - 0.5) * 14;
+      const zPos = (Math.random() - 0.5) * 16;
+
+      sprite.position.set(Math.cos(angle) * radius, yPos, zPos);
+      floatingCodeGroup.add(sprite);
+
+      floatingItems.push({
+        sprite,
+        initialY: yPos,
+        speedY: 0.4 + Math.random() * 0.6,
+        rotSpeed: (Math.random() - 0.5) * 0.02,
+        amplitude: 0.6 + Math.random() * 0.8,
+        phase: Math.random() * Math.PI * 2,
+      });
+    });
+
+    // 4. Particle Starfield Constellation
     const particleCount = 1200;
     const particleGeometry = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
@@ -130,7 +228,7 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = ({ interactiveSpeed = 1 }
     const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
     scene.add(particleSystem);
 
-    // 4. Cyber Floor Wireframe Grid
+    // 5. Cyber Floor Wireframe Grid
     const gridHelper = new THREE.GridHelper(60, 40, 0x38bdf8, 0x1e293b);
     gridHelper.position.y = -8;
     gridHelper.rotation.x = 0.1;
@@ -190,7 +288,16 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = ({ interactiveSpeed = 1 }
         orbiter.mesh.rotation.y += 0.02;
       });
 
-      // Slowly rotate particle field
+      // Animate Floating Coding Symbol Sprites
+      floatingItems.forEach((item) => {
+        item.sprite.position.y =
+          item.initialY + Math.sin(elapsedTime * item.speedY + item.phase) * item.amplitude;
+        item.sprite.position.x += Math.cos(elapsedTime * 0.2 + item.phase) * 0.005;
+        item.sprite.material.rotation += item.rotSpeed;
+      });
+
+      // Slowly rotate floating code group and particle field
+      floatingCodeGroup.rotation.y = elapsedTime * 0.05 * interactiveSpeed + mouseX * 0.8;
       particleSystem.rotation.y = elapsedTime * 0.03 * interactiveSpeed + mouseX * 0.5;
       particleSystem.rotation.x = mouseY * 0.5;
 
@@ -223,7 +330,7 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = ({ interactiveSpeed = 1 }
   return (
     <div
       ref={mountRef}
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-85"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-90"
       aria-hidden="true"
     />
   );
